@@ -14,9 +14,6 @@ import 'package:minio/src/utils.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:xml/xml.dart' show XmlElement;
 
-import '../models.dart';
-import 'minio_helpers.dart';
-
 class Minio {
   /// Initializes a new client object.
   Minio({
@@ -774,7 +771,7 @@ class Minio {
   /// - [expires]: expiry in seconds (optional, default 7 days)
   /// - [respHeaders]: response headers to override (optional)
   /// - [requestDate]: A date object, the url will be issued at (optional)
-  Future<String> presignedGetObject(
+  String presignedGetObject(
     String bucket,
     String object, {
     int? expires,
@@ -855,7 +852,7 @@ class Minio {
   /// - [bucketName]: name of the bucket
   /// - [objectName]: name of the object
   /// - [expires]: expiry in seconds (optional, default 7 days)
-  Future<String> presignedPutObject(
+  String presignedPutObject(
     String bucket,
     String object, {
     int? expires,
@@ -874,7 +871,7 @@ class Minio {
   /// - [expires]: expiry in seconds (optional, default 7 days)
   /// - [reqParams]: request parameters (optional)
   /// - [requestDate]: A date object, the url will be issued at (optional)
-  Future<String> presignedUrl(
+  String presignedUrl(
     String method,
     String bucket,
     String object, {
@@ -882,7 +879,7 @@ class Minio {
     String? resource,
     Map<String, String>? reqParams,
     DateTime? requestDate,
-  }) async {
+  }) {
     MinioInvalidBucketNameError.check(bucket);
     MinioInvalidObjectNameError.check(object);
 
@@ -894,18 +891,24 @@ class Minio {
     reqParams ??= {};
     requestDate ??= DateTime.now().toUtc();
 
-    final region = await getBucketRegion(bucket);
+    final _region = region;
+
+    if (_region == null) {
+      throw MinioInvalidEndpointError(
+          'need to set region or call getBucketRegion() before making this request');
+    }
+
     final request = _client.getBaseRequest(
       method,
       bucket,
       object,
-      region,
+      _region,
       resource,
       reqParams,
       {},
       null,
     );
-    return presignSignatureV4(this, request, region, requestDate, expires);
+    return presignSignatureV4(this, request, _region, requestDate, expires);
   }
 
   /// Uploads the object. Returns the ETag of the uploaded object.
